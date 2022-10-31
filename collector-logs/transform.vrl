@@ -1,0 +1,13 @@
+#transform.vrl
+.source= ""
+.event = ""
+.data  = ""
+structured, err = parse_regex(.message, r'(<event>)(?P<event>.*?)(</event>)', numeric_groups: false)
+if err == null{
+  json, err_json = parse_json(structured.event)
+  if err_json == null {
+    .source= json.source
+    .event = json.event
+    .data  = encode_json(json.data)
+  }
+}

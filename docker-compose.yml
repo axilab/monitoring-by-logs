@@ -1,0 +1,48 @@
+version: '3.7'
+services:
+  ClickHouse-Server:
+    image: yandex/clickhouse-server
+    container_name: clickhouse
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - ./ClickHouse/db:/var/lib/clickhouse
+      - ./ClickHouse/users.xml:/etc/clickhouse-server/users.xml:rw
+
+   business-system:
+     container_name: business-system-simulation
+     image: node:lts-alpine
+     working_dir: /home/node/app
+     user: "node"
+     volumes:
+       - ./business-system-simulation:/home/node/app
+       - ./business-system-simulation/logs:/home/node/app/logs:rw
+     command: npm run start
+     restart: always
+     depends_on:
+       - vector-agent
+       - ClickHouse-Server
+
+   vector-agent:
+     image: timberio/vector:0.23.X-alpine
+     container_name: vector_agent
+     volumes:
+       - ./collector-logs/vector.toml:/etc/vector/vector.toml:ro
+       - ./collector-logs/transform.vrl:/etc/vector/transform.vrl:ro
+       - ./business-system-simulation/logs/:/logs/
+     depends_on:
+       - ClickHouse-Server
+
+   grafana:
+     container_name: grafana
+     image: grafana/grafana-enterprise:9.2.0-ubuntu
+     environment:
+       - GF_SECURITY_ADMIN_USER=admin
+       - GF_SECURITY_ADMIN_PASSWORD=admin
+     volumes:
+       - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+     ports:
+       - "3000:3000"
+     restart: unless-stopped

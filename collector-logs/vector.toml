@@ -1,0 +1,48 @@
+#vector.toml
+[sources.app_logs]  # эта секция описывает настройки того откуда сборщику логов брать данные.
+  type = "file"
+  include = ["/logs/*.log"]
+  
+[transforms.remap_app_logs] # Секция настроек описывающая трансформацию данных
+inputs = ["app_logs"] # Входные данные, ссылается на выше описанную секцию
+type = "remap" # задает тип трансформации, документация: https://vector.dev/docs/reference/configuration/transforms/
+file="/etc/vector/transform.vrl" # ссылка на файл с алгоритмом преобразования данных
+
+
+[transforms.filter_events] # Секция фильтрации событий
+inputs = ["remap_app_logs"] 
+type = "filter" 
+condition = '.event != ""'
+
+[transforms.filter_logs] # Секция фильтрации лога приложения
+inputs = ["remap_app_logs"] 
+type = "filter" 
+condition = '.event == ""'
+
+[sinks.emit_events] # секция описывающая место доставки событий приложения
+  type = "clickhouse"
+  inputs = ["filter_events"]
+  endpoint = "http://192.168.229.133:8123"
+  auth.strategy = "basic"
+  auth.user = "agent"
+  auth.password = "qwerty"
+  database = "log_storage"
+  table = "logs_event"
+  skip_unknown_fields = true
+  encoding.timestamp_format = "unix"
+  batch.max_events = 100
+  batch.timeout_secs = 5
+
+[sinks.emit_logs] # секция описывающая место доставки логов приложения
+  type = "clickhouse"
+  inputs = ["filter_logs"]
+  endpoint = "http://192.168.229.133:8123"
+  auth.strategy = "basic"
+  auth.user = "agent"
+  auth.password = "qwerty"
+  database = "log_storage"
+  table = "logs_app"
+  skip_unknown_fields = true
+  encoding.timestamp_format = "unix"
+  batch.max_events = 100
+  batch.timeout_secs = 5

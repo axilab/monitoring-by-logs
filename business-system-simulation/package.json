@@ -1,0 +1,14 @@
+{
+  "name": "business-system-simulation",
+  "version": "1.0.0",
+  "description": "business system simulation",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node ./src/index.js"
+  },
+  "author": "axilab",
+  "license": "ISC",
+  "dependencies": {
+  }
+}
